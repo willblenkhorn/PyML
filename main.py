@@ -132,19 +132,38 @@ H3_q00_predicted = H3_q00_Model.predict( H3_q00_TestIn ) # These are indeed a 1D
 #===================================================================================
 # graph to show conservation of monopole moment is preserved in the prediction model
 #-----------------------------------------------------------------------------------
-sumHX = H3_q00_predicted + H2_q00_predicted # These are the predicted values
+sumHX_q00_predicted = H3_q00_predicted + H2_q00_predicted # These are the predicted values
 
 sumHXmoments = H2moments + H3moments        # These are the actual calculated values
 
 plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
-plt.scatter(sumHX, O1_q00_predicted, c='b', s=8, label='predicted')
+plt.scatter(sumHX_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
 plt.xlabel( 'Sum Hydrogen 2 & 3 q00' )
 plt.ylabel( 'Oxygen 1 q00' )
 plt.title( 'Sum Hydrogen q00 vs. O1 q00' )
 plt.legend()
 plt.show()
 #===================================================================================
-
+# graph to show O1 vs H2 monopole moment is predicted well by model
+#-----------------------------------------------------------------------------------
+plt.scatter( H2moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
+plt.scatter(H2_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
+plt.xlabel( 'Hydrogen 2 q00' )
+plt.ylabel( 'Oxygen 1 q00' )
+plt.title( 'Hydrogen 2 q00 vs. O1 q00' )
+plt.legend()
+plt.show()
+#===================================================================================
+# graph to show O1 vs H3 monopole moment is predicted well by model
+#-----------------------------------------------------------------------------------
+plt.scatter( H3moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
+plt.scatter(H3_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
+plt.xlabel( 'Hydrogen 3 q00' )
+plt.ylabel( 'Oxygen 1 q00' )
+plt.title( 'Hydrogen 3 q00 vs. O1 q00' )
+plt.legend()
+plt.show()
+#===================================================================================
 
 """
 BELOW NEEDS WORK, I.E. TO BE COMPLETED
