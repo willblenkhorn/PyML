@@ -11,3 +11,7 @@
 
 
 ![Alt text](/Analysis/charge_conservation.png?raw=true "Charge is conserved")
+
+* Prediction model looks good by early indications, it matches the calculated trends overall.
+![Alt text](/Analysis/H2 predicted.png?raw=true "O1 vs H2 is well predicted")
+![Alt text](/Analysis/H3 predicted.png?raw=true "O1 vs H3 is well predicted")
