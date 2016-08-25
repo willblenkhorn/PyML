@@ -129,6 +129,22 @@ H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted, H2_
 H3_q00_predicted = H3_q00_Model.predict( H3_q00_TestIn ) # These are indeed a 1D matrix as long as the test set
 
 
+#===================================================================================
+# graph to show conservation of monopole moment is preserved in the prediction model
+#-----------------------------------------------------------------------------------
+sumHX = H3_q00_predicted + H2_q00_predicted # These are the predicted values
+
+sumHXmoments = H2moments + H3moments        # These are the actual calculated values
+
+plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
+plt.scatter(sumHX, O1_q00_predicted, c='b', s=8, label='predicted')
+plt.xlabel( 'Sum Hydrogen 2 & 3 q00' )
+plt.ylabel( 'Oxygen 1 q00' )
+plt.title( 'Sum Hydrogen q00 vs. O1 q00' )
+plt.legend()
+plt.show()
+#===================================================================================
+
 
 """
 BELOW NEEDS WORK, I.E. TO BE COMPLETED
