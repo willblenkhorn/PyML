@@ -16,4 +16,6 @@
 ![Alt text](/Analysis/H2 predicted.png?raw=true "O1 vs H2 is well predicted")
 ![Alt text](/Analysis/H3 predicted.png?raw=true "O1 vs H3 is well predicted")
 ![Alt text](/Analysis/O1_q00_vs_geom.png?raw=true "O1 vs bondlen1 is well predicted")
+* A 14% increase in performance is achieved by including the prior prediction of the oxygen in the model for the H2 atom.
 ![Alt text](/Analysis/cumulative_H2_q00_error.png?raw=true "New vs old method")
+* Need to look at the H3 atom's monopole, then start moving onto dipoles.
