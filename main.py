@@ -140,7 +140,7 @@ plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, 
 plt.scatter(sumHX_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
 plt.xlabel( 'Sum Hydrogen 2 & 3 q00' )
 plt.ylabel( 'Oxygen 1 q00' )
-plt.title( 'Sum Hydrogen q00 vs. O1 q00' )
+plt.title( 'O1 q00 vs. Sum Hydrogen\'s q00' )
 plt.legend()
 plt.show()
 #===================================================================================
@@ -150,7 +150,7 @@ plt.scatter( H2moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, lab
 plt.scatter(H2_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
 plt.xlabel( 'Hydrogen 2 q00' )
 plt.ylabel( 'Oxygen 1 q00' )
-plt.title( 'Hydrogen 2 q00 vs. O1 q00' )
+plt.title( 'O1 q00 vs. Hydrogen 2 q00' )
 plt.legend()
 plt.show()
 #===================================================================================
@@ -160,7 +160,17 @@ plt.scatter( H3moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, lab
 plt.scatter(H3_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
 plt.xlabel( 'Hydrogen 3 q00' )
 plt.ylabel( 'Oxygen 1 q00' )
-plt.title( 'Hydrogen 3 q00 vs. O1 q00' )
+plt.title( 'O1 q00 vs. Hydrogen 3 q00' )
+plt.legend()
+plt.show()
+#===================================================================================
+# graph to show O1 monopole moment vs bondlen1 is predicted well by model
+#-----------------------------------------------------------------------------------
+plt.scatter( geometry[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
+plt.scatter( geometry[-1*numTest:,0], O1_q00_predicted, c='b', s=8, label='predicted')
+plt.xlabel( 'bond length1' )
+plt.ylabel( 'Oxygen 1 q00' )
+plt.title( 'O1 q00 vs. bond length1' )
 plt.legend()
 plt.show()
 #===================================================================================
