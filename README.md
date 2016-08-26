@@ -11,7 +11,7 @@
 
 * New model using geometry and previously predicted moments, behaves well/
 ![Alt text](/Analysis/charge_conservation.png?raw=true "Charge is conserved")
-* Old moment simplying using the geometry, behaves poorly.
+* Old model simplying using the geometry, behaves poorly.
 ![Alt text](/Analysis/charge_conservation_not_observed_old.png?raw=true "Old method charge conservation is poor")
 
 * Prediction model looks good by early indications, it matches the calculated trends overall.
