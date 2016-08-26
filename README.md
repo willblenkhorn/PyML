@@ -18,4 +18,5 @@
 ![Alt text](/Analysis/O1_q00_vs_geom.png?raw=true "O1 vs bondlen1 is well predicted")
 * A 14% increase in performance is achieved by including the prior prediction of the oxygen in the model for the H2 atom.
 ![Alt text](/Analysis/cumulative_H2_q00_error.png?raw=true "New vs old method")
+![Alt text](/Analysis/charge_conservation_not_observed_old.png?raw=true "Old method charge conservation is poor")
 * Need to look at the H3 atom's monopole, then start moving onto dipoles.
