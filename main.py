@@ -243,7 +243,20 @@ percImproved = (H2_q00_avErrorOld - H2_q00_avError) / H2_q00_avError * 100
 print("The average improvement from including other moments is ", percImproved, "%" )
 ######################################################################
 
+#===================================================================================
+# graph to show conservation of monopole moment is NOT preserved in the OLD prediction model
+#-----------------------------------------------------------------------------------
+sumHX_q00_predictedOld = H2_q00_predictedOld + H2_q00_predictedOld # These are the predicted values
+sumHXmoments = H2moments + H3moments        # These are the actual calculated values
 
+plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
+# NB the prediction of oxygen is from geometry in both cases
+plt.xlabel( 'Sum Hydrogen 2 & 3 q00 from old model' )
+plt.scatter(sumHX_q00_predictedOld, O1_q00_predicted, c='b', s=8, label='predicted in old model') 
+plt.ylabel( 'Oxygen 1 q00' )
+plt.title( 'O1 q00 vs. Sum Hydrogen\'s q00 in OLD model' )
+plt.legend()
+plt.show()
 
 
 #===========================================================
