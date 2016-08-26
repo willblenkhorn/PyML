@@ -14,7 +14,7 @@
 * Old model simplying using the geometry, behaves poorly.
 ![Alt text](/Analysis/charge_conservation_not_observed_old.png?raw=true "Old method charge conservation is poor")
 
-* Prediction model looks good by early indications, it matches the calculated trends overall.
+* The new model's predictive power appears good by early indications, it matches the calculated trends overall.
 ![Alt text](/Analysis/H2 predicted.png?raw=true "O1 vs H2 is well predicted")
 ![Alt text](/Analysis/H3 predicted.png?raw=true "O1 vs H3 is well predicted")
 ![Alt text](/Analysis/O1_q00_vs_geom.png?raw=true "O1 vs bondlen1 is well predicted")
