@@ -1,26 +1,20 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Aug  1 10:31:55 2016
-
 Heirachical self consistent multipole approximation.
-
 #----- Model Design ------------#
 ---------------------------------
 1.) Estimate monopole from geometry
 2.) Estimate dipole components from monopole and geometry
 3.) Estimate quadrupole from from previous moments and geometry
 4.) Estimate octopole from previous moments and geometry
-
 #----- Usage ------------------#
 Estimate monopole from gemoetry
 Insert geometry and the results for monopole prediction into the dipole prediction
 Insert geometry and the previous results... etc
-
-
     To start a document sharing server:
         infinoted --create-key --create-certificate -k key.pem  -c cert.pem
 		infinoted -k key.pem  -c cert.pem
-
 @author: josh + will
 """
 import numpy as np
@@ -175,11 +169,86 @@ plt.legend()
 plt.show()
 #===================================================================================
 
-"""
-BELOW NEEDS WORK, I.E. TO BE COMPLETED
-"""
 
-#def print_average_error(predicted,actual):
+#===================================================================================
+# This is the reference model which only uses input geometry,
+#
+#       oxygen will not experience a benefit, since that was calculated first in the new
+#       model, so isn't compared here.
+#-----------------------------------------------------------------------------------
+H2_q00_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 )
+H3_q00_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
+
+# The training data outputs to train with, so they should be a vector without multiple columns
+#   These are unchanged but redefined for clarity
+H2_q00_TrainOutOld = H2moments[:-1*numTest, 0] # h2 test data
+H3_q00_TrainOutOld = H3moments[:-1*numTest, 0] # h3 test data
+
+## Input training data 
+H2_q00_TrainInOld = geometry[:-1*numTest,:] # geometry only
+H3_q00_TrainInOld = geometry[:-1*numTest,:] # geometry only
+
+#------------------------------------------------------------
+# Construct model, using ideallised, precalculated data
+#------------------------------------------------------------
+H2_q00_ModelOld.fit( H2_q00_TrainInOld, H2_q00_TrainOutOld )
+H3_q00_ModelOld.fit( H3_q00_TrainInOld, H3_q00_TrainOutOld )
+#------------------------------------------------------------
+# Using the reference model
+#------------------------------------------------------------
+H2_q00_TestInOld = geometry[-1*numTest:,:] 
+H3_q00_TestInOld = geometry[-1*numTest:,:] 
+H2_q00_predictedOld = H2_q00_ModelOld.predict( H2_q00_TestInOld )
+H3_q00_predictedOld = H3_q00_ModelOld.predict( H3_q00_TestInOld )
+
+
+
+
+#=============================================================================
+# A log-linear histogram of the monopole's error, for the new and old model
+#-----------------------------------------------------------------------------
+# calculate distribution of error in the new and older model
+H2_q00_ErrorDist = np.abs( np.abs( H2_q00_predicted ) - np.abs( H2moments[-1*numTest:,0] ) ) 
+H2_q00_ErrorDistOld = np.abs( np.abs( H2_q00_predictedOld ) - np.abs( H2moments[-1*numTest:,0] ) ) 
+
+fig = plt.figure()
+MIN, MAX = .00001, 0.01 # Define the range on the graph's axis
+
+n, bins, patches = plt.hist(H2_q00_ErrorDist, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
+
+plt.gca().set_xscale("log")
+
+plt.xlabel('Magnitude of H2_q00 Error')
+plt.ylabel('Cumulative Number Fraction')
+plt.title('Cumulative H2_q00 Error Distribution')
+plt.grid(True)
+plt.ylim(0, 1.05)
+
+n, bins, patches = plt.hist(H2_q00_ErrorDistOld, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+
+legend = plt.legend(loc='upper left', shadow=True, fontsize='large')
+
+fig.savefig('cumulative_H2_q00_error.png',dpi=600)
+plt.show()
+
+H2_q00_avError = np.mean(H2_q00_ErrorDist)
+H2_q00_avErrorOld = np.mean(H2_q00_ErrorDistOld)
+
+percImproved = (H2_q00_avErrorOld - H2_q00_avError) / H2_q00_avError * 100
+
+print("The average improvement from including other moments is ", percImproved, "%" )
+######################################################################
+
+
+
+
+#===========================================================
+
+#def printAverageError( predicted, actual ):
 #	
 #	error = np.mean( np.abs( np.abs(predicted) - np.abs(actual)))
 #	print( "the mean squared error on the monopole is", error)
@@ -188,115 +257,9 @@ BELOW NEEDS WORK, I.E. TO BE COMPLETED
 #
 #	return 0 
 #	
-#def calculate_average_percentage_error(predicted,actual):
+#def calculateAveragePercentageError( predicted, actual ):
 #	
 #	error = np.mean( np.abs( np.abs(predicted) - np.abs(actual))) ## Should we instead use the distribution instead of just the mean?
 #	MeanRaw = np.abs( np.mean( O1rawData[-1*numTest:,3] ) )
 #	
 #	return	( error / MeanRaw ) * 100
-#	
-#
-## so we need to create the models and then move onto testing the "prediction" tree
-## input -> monopole(o)
-## input + monopole(o) -> monopole(H)....
-#
-#
-#
-#
-#
-## Calculate error for the monopole
-# = np.mean(  np.abs( np.abs(oxgyenMonopolePredicted) - np.abs(O1rawData[-1*numTest:,3]) )  )
-#print( "the mean squared error on the monopole is", OxygenMonopoleError)
-#oxygenMeanRaw = np.abs( np.mean( O1rawData[-1*numTest:,3] ) )
-#print( "the percentage error is therefore", (OxygenMonopoleError / oxygenMeanRaw ) * 100 )
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-## Fit model to predict dipole from input geometry and monopole
-#dipoleModel = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 )
-##dipoleModel = SVR( kernel='poly', C=1, degree=6, gamma=0.35, cache_size=1600, epsilon =0.012 ) # Polynomial fit
-#
-## positions and monopole used to train the dipole moment
-#posMonoTraining = O1rawData[:-1*numTest,:4]  
-## Considering dipole (moment3), since it has a trend with position, easier to test.
-#dipoleTraining = O1rawData[:-1*numTest, 5] 
-## Constructing model  
-#dipoleModel.fit( posMonoTraining, dipoleTraining )
-## Constructing test set
-#dipoleTestSet = O1rawData[-1*numTest:,:4]
-#
-#
-## Predict using model
-#dipolePredicted = dipoleModel.predict( dipoleTestSet )
-#
-#
-#
-#
-#
-#
-#
-## Calculate error for the dipole
-#dipoleError = np.mean(  np.abs( np.abs(dipolePredicted) - np.abs(O1rawData[-1*numTest:,5]) )  ) 
-#print( "the mean squared error on the dipole is", dipoleError)
-#meanDipoleRaw = np.abs( np.mean( dipoleTestSet ) )
-#print( "the percentage error is therefore", ( dipoleError / meanDipoleRaw ) * 100 )
-#
-#
-#######################################################################
-## the histogram of the monopole's and dipole's error
-#######################################################################
-#
-## calculate distribution of error instead of just the average
-#monpoleErrorDist = np.abs( np.abs(monopolePredicted) - np.abs(O1rawData[-1*numTest:,3]) ) 
-#
-#fig = plt.figure()
-#MIN, MAX = .0001, 0.015 # Define the range on the graph's axis
-#
-#n, bins, patches = plt.hist(monpoleErrorDist, 
-#                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
-#normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='monopole' )
-#                            
-##pl.hist(data, bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50))
-#plt.gca().set_xscale("log")
-#
-## add a 'best fit' line
-##y = mlab.normpdf( bins, mu, sigma)
-##l = plt.plot(bins, y, 'r--', linewidth=1)
-#
-#plt.xlabel('Magnitude of Error')
-#plt.ylabel('Probability')
-#plt.title('Cumulative Error Distribution')
-##plt.axis([40, 160, 0, 0.03])
-#plt.grid(True)
-#plt.ylim(0, 1.05)
-##plt.show()
-#################################
-#
-#
-#dipoleErrorDist = np.abs( np.abs(dipolePredicted) - np.abs(O1rawData[-1*numTest:,5]) ) 
-#
-##plt.figure()
-#MIN, MAX = .0001, 0.015
-#
-#n, bins, patches = plt.hist(dipoleErrorDist, 
-#                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
-#normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Dipole' )
-#
-#legend = plt.legend(loc='center right', shadow=True, fontsize='large')
-#                            
-#
-## add a 'best fit' line
-##y = mlab.normpdf( bins, mu, sigma)
-##l = plt.plot(bins, y, 'r--', linewidth=1)
-#
-#
-#fig.savefig('cumulative_error.png',dpi=600)
-#plt.show()
-#######################################################################
