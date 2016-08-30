@@ -14,7 +14,7 @@ Insert geometry and the results for monopole prediction into the dipole predicti
 Insert geometry and the previous results... etc
     To start a document sharing server:
         infinoted --create-key --create-certificate -k key.pem  -c cert.pem
-		infinoted -k key.pem  -c cert.pem
+        infinoted -k key.pem  -c cert.pem
 @author: josh + will
 """
 import numpy as np
@@ -76,7 +76,8 @@ H3_q00_TrainOut = H3moments[:-1*numTest, 0] # h3 test data
 ## Input training data 
 O1_q00_TrainIn = geometry[:-1*numTest,:] # geometry only
 H2_q00_TrainIn = np.column_stack(( O1_q00_TrainIn, O1moments[:-1*numTest,0] )) # geometry + oxygen's monopole
-H3_q00_TrainIn = np.column_stack(( H2_q00_TrainIn, H2moments[:-1*numTest,0] )) # geometry + O1 mono + H2 mono
+#H3_q00_TrainIn = np.column_stack(( H2_q00_TrainIn, H2moments[:-1*numTest,0] )) # geometry + O1 mono + H2 mono
+H3_q00_TrainIn = H2_q00_TrainIn # geometry + O1 mono + H2 mono
 
 
 # all the geometries are included (implicitly) in the bond lengths and the bond angle
@@ -119,7 +120,8 @@ H2_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) #
 H2_q00_predicted = H2_q00_Model.predict( H2_q00_TestIn )
 
 # Use predicted O1 and H2 monopole in H3_q00_TestIn, input for H3's prediction
-H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted, H2_q00_predicted )) # geometry + O1 mono (predicted) + H2 mono (predicted)
+#H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted, H2_q00_predicted )) # geometry + O1 mono (predicted) + H2 mono (predicted)
+H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) # geometry + O1 mono (predicted) + H2 mono (predicted)
 H3_q00_predicted = H3_q00_Model.predict( H3_q00_TestIn ) # These are indeed a 1D matrix as long as the test set
 
 
@@ -202,11 +204,9 @@ H2_q00_predictedOld = H2_q00_ModelOld.predict( H2_q00_TestInOld )
 H3_q00_predictedOld = H3_q00_ModelOld.predict( H3_q00_TestInOld )
 
 
-
-
-#=============================================================================
-# A log-linear histogram of the monopole's error, for the new and old model
-#-----------------------------------------------------------------------------
+#=================================================================================
+# A H2_q00 log-linear histogram of the monopole's error, for the new and old model
+#---------------------------------------------------------------------------------
 # calculate distribution of error in the new and older model
 H2_q00_ErrorDist = np.abs( np.abs( H2_q00_predicted ) - np.abs( H2moments[-1*numTest:,0] ) ) 
 H2_q00_ErrorDistOld = np.abs( np.abs( H2_q00_predictedOld ) - np.abs( H2moments[-1*numTest:,0] ) ) 
@@ -218,6 +218,10 @@ n, bins, patches = plt.hist(H2_q00_ErrorDist,
                             bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
 normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
 
+n, bins, patches = plt.hist(H2_q00_ErrorDistOld, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+
 plt.gca().set_xscale("log")
 
 plt.xlabel('Magnitude of H2_q00 Error')
@@ -225,10 +229,6 @@ plt.ylabel('Cumulative Number Fraction')
 plt.title('Cumulative H2_q00 Error Distribution')
 plt.grid(True)
 plt.ylim(0, 1.05)
-
-n, bins, patches = plt.hist(H2_q00_ErrorDistOld, 
-                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
-normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
 
 legend = plt.legend(loc='upper left', shadow=True, fontsize='large')
 
@@ -238,9 +238,46 @@ plt.show()
 H2_q00_avError = np.mean(H2_q00_ErrorDist)
 H2_q00_avErrorOld = np.mean(H2_q00_ErrorDistOld)
 
-percImproved = (H2_q00_avErrorOld - H2_q00_avError) / H2_q00_avError * 100
+percH2Improved = (H2_q00_avErrorOld - H2_q00_avError) / H2_q00_avError * 100
 
-print("The average improvement from including other moments is ", percImproved, "%" )
+print("The average improvement from including other moments is ", percH2Improved, "%" )
+
+#=================================================================================
+# A H3_q00 log-linear histogram of the monopole's error, for the new and old model
+#---------------------------------------------------------------------------------
+# calculate distribution of error in the new and older model
+H3_q00_ErrorDist = np.abs( np.abs( H3_q00_predicted ) - np.abs( H3moments[-1*numTest:,0] ) ) 
+H3_q00_ErrorDistOld = np.abs( np.abs( H3_q00_predictedOld ) - np.abs( H3moments[-1*numTest:,0] ) ) 
+
+fig = plt.figure()
+MIN, MAX = .00001, 0.01 # Define the range on the graph's axis
+
+n, bins, patches = plt.hist(H3_q00_ErrorDist, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
+
+n, bins, patches = plt.hist(H3_q00_ErrorDistOld, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+
+plt.gca().set_xscale("log")
+plt.xlabel('Magnitude of H3_q00 Error')
+plt.ylabel('Cumulative Number Fraction')
+plt.title('Cumulative H3_q00 Error Distribution')
+plt.grid(True)
+plt.ylim(0, 1.05)
+
+legend = plt.legend(loc='upper left', shadow=True, fontsize='large')
+
+fig.savefig('cumulative_H3_q00_error.png',dpi=600)
+plt.show()
+
+H3_q00_avError = np.mean(H3_q00_ErrorDist)
+H3_q00_avErrorOld = np.mean(H3_q00_ErrorDistOld)
+
+percH3Improved = (H3_q00_avErrorOld - H3_q00_avError) / H3_q00_avError * 100
+
+print("The average improvement from including other moments is ", percH3Improved, "%" )
 ######################################################################
 
 #===================================================================================
