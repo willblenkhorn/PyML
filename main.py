@@ -30,11 +30,17 @@ H2rawData = np.loadtxt(open("H2_TRAINING_SET_labelled_notop2.csv","rb"),delimite
 H3rawData = np.loadtxt(open("H3_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
 
 # Selected the valid moments, which change appreciably and excluded non-descriptive ones.
-O1moments = np.column_stack( (O1rawData[:,3], O1rawData[:,5:8], O1rawData[:,10:12], O1rawData[:,13:15], O1rawData[:,17:20], O1rawData[:,22:24], O1rawData[:,26:28]) )
+O1moments = np.column_stack( (O1rawData[:,3], O1rawData[:,5:8], 
+                              O1rawData[:,10:12], O1rawData[:,13:15], 
+O1rawData[:,17:20], O1rawData[:,22:24], O1rawData[:,26:28]) )
 
-H2moments = np.column_stack( (H2rawData[:,3], H2rawData[:,5:8], H2rawData[:,10:12], H2rawData[:,13:15], H2rawData[:,17:20], H2rawData[:,22:24], H2rawData[:,26:28]) )
+H2moments = np.column_stack( (H2rawData[:,3], H2rawData[:,5:8], 
+                              H2rawData[:,10:12], H2rawData[:,13:15], 
+H2rawData[:,17:20], H2rawData[:,22:24], H2rawData[:,26:28]) )
 
-H3moments = np.column_stack( (H3rawData[:,3], H3rawData[:,5:8], H3rawData[:,10:12], H3rawData[:,13:15], H3rawData[:,17:20], H3rawData[:,22:24], H3rawData[:,26:28]) )
+H3moments = np.column_stack( (H3rawData[:,3], H3rawData[:,5:8], 
+                              H3rawData[:,10:12], H3rawData[:,13:15], 
+H3rawData[:,17:20], H3rawData[:,22:24], H3rawData[:,26:28]) )
 
 geometry = O1rawData[:,:3]
 
@@ -61,7 +67,7 @@ H2_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =
 H3_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
 
 # multipole names 			(without excluded multipoles) 
-# Q[0,0] monopole, Q[1,x] dipole, Q[2,x] quadrupole, Q[3,x]
+# Q[0,0] monopole, Q[1,x] dipole, Q[2,x] quadrupole, Q[3,x] octopole, ...
 
 # multipole symbols 		(without excluded multipoles)
 # Q[0,0], Q[1,1,c], Q[1,1,s], Q[2,0], Q[2,2,c], Q[2,2,s], Q[3,1,c], Q[3,1,s], 
@@ -295,6 +301,96 @@ plt.title( 'O1 q00 vs. Sum Hydrogen\'s q00 in OLD model' )
 plt.legend()
 plt.show()
 
+#==============================================================================
+# Dipole prediction on the oxygen atom
+#   Predicted before hydrogen dipoles
+#   relies on geometry and oxygen charge
+#   Optionally try to include hydrogen charge and see if it improves the result
+#------------------------------------------------------------------------------
+
+O1_q11c_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 )
+H2_q11c_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
+H3_q11c_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
+O1_q11c_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 )
+H2_q11c_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
+H3_q11c_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, cache_size=1600, epsilon =0.001 ) 
+
+# The training data outputs to train with, so they should be a vector without multiple columns
+#   These are unchanged but redefined for clarity
+O1_q11c_TrainOut = O1moments[:-1*numTest, 1]
+H2_q11c_TrainOut = H2moments[:-1*numTest, 1] # h2 test data
+H3_q11c_TrainOut = H3moments[:-1*numTest, 1] # h3 test data
+
+## Input training data 
+O1_q11c_TrainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+H2_q11c_TrainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+H3_q11c_TrainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+O1_q11c_TrainInOld = geometry[:-1*numTest,:]
+H2_q11c_TrainInOld = geometry[:-1*numTest,:]
+H3_q11c_TrainInOld = geometry[:-1*numTest,:]
+
+#------------------------------------------------------------
+# Construct model, using ideallised, precalculated data
+#------------------------------------------------------------
+O1_q11c_Model.fit( O1_q11c_TrainIn, O1_q11c_TrainOut )
+H2_q11c_Model.fit( H2_q11c_TrainIn, H2_q11c_TrainOut )
+H3_q11c_Model.fit( H3_q11c_TrainIn, H3_q11c_TrainOut )
+O1_q11c_ModelOld.fit( O1_q11c_TrainInOld, O1_q11c_TrainOut )
+H2_q11c_ModelOld.fit( H2_q11c_TrainInOld, H2_q11c_TrainOut )
+H3_q11c_ModelOld.fit( H3_q11c_TrainInOld, H3_q11c_TrainOut )
+#------------------------------------------------------------
+# Using the model
+#------------------------------------------------------------
+O1_q11c_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+H2_q11c_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+H3_q11c_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+O1_q11c_TestInOld = geometry[-1*numTest:,:] 
+H2_q11c_TestInOld = geometry[-1*numTest:,:] 
+H3_q11c_TestInOld = geometry[-1*numTest:,:] 
+
+O1_q11c_predicted = O1_q11c_Model.predict( O1_q11c_TestIn )
+H2_q11c_predicted = H2_q11c_Model.predict( H2_q11c_TestIn )
+H3_q11c_predicted = H3_q11c_Model.predict( H3_q11c_TestIn )
+O1_q11c_predictedOld = O1_q11c_ModelOld.predict( O1_q11c_TestInOld )
+H2_q11c_predictedOld = H2_q11c_ModelOld.predict( H2_q11c_TestInOld )
+H3_q11c_predictedOld = H3_q11c_ModelOld.predict( H3_q11c_TestInOld )
+
+#=================================================================================
+# A O1_q11c log-linear histogram of the monopole's error, for the new and old model
+#---------------------------------------------------------------------------------
+# calculate distribution of error in the new and older model
+O1_q11c_ErrorDist = np.abs( np.abs( O1_q11c_predicted ) - np.abs( O1moments[-1*numTest:,1] ) ) 
+O1_q11c_ErrorDistOld = np.abs( np.abs( O1_q11c_predictedOld ) - np.abs( O1moments[-1*numTest:,1] ) ) 
+
+fig = plt.figure()
+MIN, MAX = np.min(O1_q11c_ErrorDist), np.max(O1_q11c_ErrorDist) # Define the range on the graph's axis
+
+n, bins, patches = plt.hist(O1_q11c_ErrorDist, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
+
+n, bins, patches = plt.hist(O1_q11c_ErrorDistOld, 
+                            bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+
+plt.gca().set_xscale("log")
+plt.xlabel('Magnitude of O1_q11c Error')
+plt.ylabel('Cumulative Number Fraction')
+plt.title('Cumulative O1_q11c Error Distribution')
+plt.grid(True)
+plt.ylim(0, 1.05)
+
+legend = plt.legend(loc='upper left', shadow=True, fontsize='large')
+
+fig.savefig('cumulative_O1_q11c_error.png',dpi=600)
+plt.show()
+
+O1_q11c_avError = np.mean(O1_q11c_ErrorDist)
+O1_q11c_avErrorOld = np.mean(O1_q11c_ErrorDistOld)
+
+percO1_q11c_Improved = (O1_q11c_avErrorOld - O1_q11c_avError) / O1_q11c_avError * 100
+
+print("The average improvement from including other moments is ", percO1_q11c_Improved, "%" )
 
 #===========================================================
 
