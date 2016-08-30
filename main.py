@@ -392,6 +392,49 @@ percO1_q11c_Improved = (O1_q11c_avErrorOld - O1_q11c_avError) / O1_q11c_avError 
 
 print("The average improvement from including other moments is ", percO1_q11c_Improved, "%" )
 
+
+def printError( newPred, oldPred, truth, xAxis, title ):
+    #=================================================================================
+    # A O1_q11c log-linear histogram of the monopole's error, for the new and old model
+    #---------------------------------------------------------------------------------
+    # calculate distribution of error in the new and older model
+    #       Compare the newPrediction and oldPrection agaisnt the truth
+    newPred_ErrorDist = np.abs( np.abs( newPred ) - np.abs( truth ) ) 
+    oldPred_ErrorDist = np.abs( np.abs( oldPred ) - np.abs( truth ) ) 
+    
+    fig = plt.figure()
+    MIN, MAX = np.min( newPred_ErrorDist ), np.max( newPred_ErrorDist ) # Define the range on the graph's axis
+    
+    n, bins, patches = plt.hist(O1_q11c_ErrorDist, 
+                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+    normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
+    
+    n, bins, patches = plt.hist(O1_q11c_ErrorDistOld, 
+                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+    normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+    
+    plt.gca().set_xscale("log")
+#    xlabel = 
+    plt.xlabel( 'Magnitude of '+ xAxis + ' error' )
+    plt.ylabel( 'Cumerlative Number Fraction' )
+    plt.title('Cumulative '+ title+ ' Error Distribution')
+    plt.grid(True)
+    plt.ylim(0, 1.05)
+    
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='large')
+    
+    fig.savefig('cumulative_'+ title+ '_error.png',dpi=600)
+    plt.show()
+    
+    newPred_avError = np.mean( newPred_ErrorDist )
+    oldPred_avError = np.mean( oldPred_ErrorDist )
+    
+    percImproved = (newPred_avError - oldPred_avError) / newPred_avError * 100
+    
+    print("The average improvement from including other moments is ", percImproved, "%" )
+    
+
+
 #===========================================================
 
 #def printAverageError( predicted, actual ):
