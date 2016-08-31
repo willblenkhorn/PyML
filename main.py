@@ -340,12 +340,14 @@ if __name__ == '__main__':
             model.fit(trainIn, trainOut)
             return model.predict(testIn)
             
+
 #   Input arguments for multi threading "starmap" routine     
 #           For an example of starmap for multicore processing see:  
 #           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
     q11c_inputArgs = [("O1","new"),("O1","old"),("H2","new"),("H2","old"),("H3","new"),("H3","old")]
     q11c_result = [np.empty(numTest), np.empty(numTest), np.empty(numTest),
               np.empty(numTest), np.empty(numTest), np.empty(numTest)]
+
               
 #   Multithreaded "starmap" section, each fn call passes two args
     with Pool(cpu_count()) as workPool:
@@ -353,8 +355,10 @@ if __name__ == '__main__':
         workPool.close()
         workPool.join()
 
+
 #    printError( q11c_result[0], q11c_result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
 #    printError( q11c_result[2], q11c_result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
 #    printError( q11c_result[4], q11c_result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
 
     
+
