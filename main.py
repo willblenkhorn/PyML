@@ -32,11 +32,8 @@ import numpy as np
 from sklearn.svm import SVR
 import matplotlib.pyplot as plt
 import seaborn as sns # nice theme <<< OPTIONAL >>
-
 from multiprocessing import Pool, freeze_support, cpu_count
-
-
-        
+import numba
 
 
 def printError( newPred, oldPred, truth, title ):
@@ -132,7 +129,7 @@ if __name__ == '__main__':
     #===============================================================================
     # TODO: Create input data processesing function to select columns in input 
     #       which have a mean and stdev <1E-5 (or programmable threshold)
-    
+    #===============================================================================
     
     # input data for each atom
     O1rawData = np.loadtxt(open("O1_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
@@ -157,17 +154,7 @@ if __name__ == '__main__':
     #     TODO: 
     #-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
     #===============================================================================
-    
-    #===============================================================================
-    # Model training code
-    #       monopole model needs to, predict oxygen from the coordinates, then predict 
-    #       hydrogen's monopole from oxygen's monopole plus the coordinates
-    #===============================================================================
-    
-    # all the geometries are included (implicitly) in the bond lengths and the bond angle
-    # it's a simplification to putting all the xyz coordinates, "compression" of that information
-    # spherical polar representation with two vectors
-
+    @numba.jit
     def monopoleModel(atom, newOrOld):
 #   Purpose: Calculates the monopole value
 #   Usage: Accepts atom type and if new or old model
@@ -204,110 +191,18 @@ if __name__ == '__main__':
             
 #   Input arguments for multi threading "starmap" routine           
     q00_inputArgs = [("H2","new"),("H2","old"),("H3","new"),("H3","old")]
-    q00_result = [np.zeros(numTest), np.zeros(numTest), np.zeros(numTest),
-              np.zeros(numTest)]
-              
+    q00_result = [np.empty(numTest), np.empty(numTest), np.empty(numTest),
+              np.empty(numTest)]        
               
 #   Multithreaded "starmap" section, each fn call passes two args
     with Pool(cpu_count()) as workPool:
-        q11c_result = workPool.starmap(monopoleModel, q00_inputArgs)
+        q00_result = workPool.starmap(monopoleModel, q00_inputArgs)
         workPool.close()
         workPool.join()
     # Result now contains:  O1_old, H2_new, H2_old, H3_new, H3_old
-#    q00_result = np.column_stack((O1_q00_predicted, q00_result))
+    q00_result.insert(0,O1_q00_predicted)
 
-## figure out how to put things to the start of the list
-
-
-
-
-    
-    O1_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )
-    H2_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )
-    H3_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
-    
-    # TODO: Hydrogen's monopole sum is the same magnitude and opposite sign as the oxygen atom,
-    #       use this to avoid the computation of H3 by: O1 - H2 = H3  This is quite a specific case though...
-    #       Q: How could that be generalised?
-    #       A: Could look at the prediction accuracy, if low can try to deduce? Difficult to generalise and if >1
-    
-    # The training data's outputs to train with, so they should be a vector without multiple columns
-    O1_q00_TrainOut = O1moments[:-1*numTest, 0] # Oxygen model's testSetData output   
-    H2_q00_TrainOut = H2moments[:-1*numTest, 0] # h2 test data
-    H3_q00_TrainOut = H3moments[:-1*numTest, 0] # h3 test data
-    
-    ## Input training data 
-    O1_q00_TrainIn = geometry[:-1*numTest,:] # geometry only
-    H2_q00_TrainIn = np.column_stack(( O1_q00_TrainIn, O1moments[:-1*numTest,0] )) # geometry + oxygen's monopole
-    H3_q00_TrainIn = H2_q00_TrainIn # geometry + Oxygen's monopole only
-    
-    # Surprisingly if you run it with the additional information from the H2 monopole, it performs worse not better!
-    #   H3_q00_TrainIn = np.column_stack(( H2_q00_TrainIn, H2moments[:-1*numTest,0] )) # geometry + O1 mono + H2 mono
-    
-    #------------------------------------------------------------
-    # Construct model, using ideallised, precalculated data
-    #------------------------------------------------------------
-    O1_q00_Model.fit( O1_q00_TrainIn, O1_q00_TrainOut ) 
-    H2_q00_Model.fit( H2_q00_TrainIn, H2_q00_TrainOut )
-    H3_q00_Model.fit( H3_q00_TrainIn, H3_q00_TrainOut )
-    
-    #==========================================================================================
-    # Model usage, to predict successive quantities
-    #==========================================================================================
-    
-    # oxygen monopole model uses geometry only, in prediction
-    O1_q00_TestIn = geometry[-1*numTest:,:] 
-    O1_q00_predicted = O1_q00_Model.predict( O1_q00_TestIn )
-    
-    # Use predicted oxygen monopole in H2_q00_TestIn, input for H2's prediction
-    H2_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) # geometry + oxygen's PREDICTED monopole
-    H2_q00_predicted = H2_q00_Model.predict( H2_q00_TestIn )
-    
-    # Using predicted O1 and H2 monopole in H3_q00_TestIn, input for H3's prediction reduced accuracy
-    #H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted, H2_q00_predicted )) # geometry + O1 mono (predicted) + H2 mono (predicted)
-    
-    # Using just geometry and O1 monopole increased accuracy, though not by much (3%)
-    H3_q00_TestIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) # geometry + O1 mono (predicted) 
-    H3_q00_predicted = H3_q00_Model.predict( H3_q00_TestIn ) # These are indeed a 1D matrix as long as the test set
-    
-    
-    #===================================================================================
-    # This is the reference model which only uses input geometry,
-    #
-    #       oxygen will not experience a benefit, since that was calculated first in the new
-    #       model, so isn't compared here.
-    #-----------------------------------------------------------------------------------
-    H2_q00_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )
-    H3_q00_ModelOld = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
-    
-    # The training data outputs to train with, so they should be a vector without multiple columns
-    #   These are unchanged but redefined for clarity
-    H2_q00_TrainOutOld = H2moments[:-1*numTest, 0] # h2 test data
-    H3_q00_TrainOutOld = H3moments[:-1*numTest, 0] # h3 test data
-    
-    ## Input training data 
-    H2_q00_TrainInOld = geometry[:-1*numTest,:] # geometry only
-    H3_q00_TrainInOld = geometry[:-1*numTest,:] # geometry only
-    
-    #------------------------------------------------------------
-    # Construct model, using ideallised, precalculated data
-    #------------------------------------------------------------
-    H2_q00_ModelOld.fit( H2_q00_TrainInOld, H2_q00_TrainOutOld )
-    H3_q00_ModelOld.fit( H3_q00_TrainInOld, H3_q00_TrainOutOld )
-    #------------------------------------------------------------
-    # Using the reference model
-    #------------------------------------------------------------
-    H2_q00_TestInOld = geometry[-1*numTest:,:] 
-    H3_q00_TestInOld = geometry[-1*numTest:,:] 
-    H2_q00_predictedOld = H2_q00_ModelOld.predict( H2_q00_TestInOld )
-    H3_q00_predictedOld = H3_q00_ModelOld.predict( H3_q00_TestInOld )
-    
-    #-----------------------------------------------------------------------------------------
-    # A H2_q00 & H3_q00 log-linear histogram of the monopole's error, for the new and old model
-    #    printError( H2_q00_predicted, H2_q00_predictedOld, H2moments[-1*numTest:,0], 'H2_q00' )
-    #    printError( H3_q00_predicted, H3_q00_predictedOld, H3moments[-1*numTest:,0], 'H3_q00' )
-    #-----------------------------------------------------------------------------------------
-
+    @numba.jit()
     def dipoleModel(atom, newOrOld):
 #   Purpose: Calculates the dipole value
 #   Usage: Accepts atom type and if new or old model and calculates the dipole value.
@@ -316,15 +211,15 @@ if __name__ == '__main__':
             if(atom == "O1"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
                 trainOut = O1moments[:-1*numTest, 1]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[0] ))
             if(atom == "H2"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
                 trainOut = H2moments[:-1*numTest, 1]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], H2_q00_predicted )) 
+                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[1] )) 
             if(atom == "H3"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
                 trainOut = H3moments[:-1*numTest, 1]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], H3_q00_predicted ))
+                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[3] ))
             model.fit(trainIn, trainOut)
             return model.predict(testIn)
                 
@@ -356,9 +251,9 @@ if __name__ == '__main__':
         workPool.join()
 
 
-#    printError( q11c_result[0], q11c_result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
-#    printError( q11c_result[2], q11c_result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
-#    printError( q11c_result[4], q11c_result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
+    printError( q11c_result[0], q11c_result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
+    printError( q11c_result[2], q11c_result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
+    printError( q11c_result[4], q11c_result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
 
     
 
