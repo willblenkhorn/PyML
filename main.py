@@ -167,6 +167,60 @@ if __name__ == '__main__':
     # all the geometries are included (implicitly) in the bond lengths and the bond angle
     # it's a simplification to putting all the xyz coordinates, "compression" of that information
     # spherical polar representation with two vectors
+
+    def monopoleModel(atom, newOrOld):
+#   Purpose: Calculates the monopole value
+#   Usage: Accepts atom type and if new or old model
+        model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
+        if( newOrOld == "new" ):
+            if(atom == "H2"):
+                trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+                trainOut = H2moments[:-1*numTest, 0]
+                testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) 
+            if(atom == "H3"):
+                trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+                trainOut = H3moments[:-1*numTest, 0]
+                testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+            model.fit(trainIn, trainOut)
+            return model.predict(testIn)
+                
+        if(newOrOld=="old"):
+            trainIn = geometry[:-1*numTest,:]
+            testIn = geometry[-1*numTest:,:]
+            if(atom == "H2"):
+                trainOut = H2moments[:-1*numTest, 0]
+            if(atom == "H3"):
+                trainOut = H3moments[:-1*numTest, 0]  
+            model.fit(trainIn, trainOut)
+            return model.predict(testIn)
+            
+    # Calculate the oxygen's monopole before starting threaded section
+    O1_q00_model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
+    O1_q00_trainIn = geometry[:-1*numTest,:]
+    O1_q00_trainOut = O1moments[:-1*numTest, 0]
+    O1_q00_testIn = geometry[-1*numTest:,:] 
+    O1_q00_model.fit(O1_q00_trainIn, O1_q00_trainOut)
+    O1_q00_predicted = O1_q00_model.predict(O1_q00_testIn)
+            
+#   Input arguments for multi threading "starmap" routine           
+    q00_inputArgs = [("H2","new"),("H2","old"),("H3","new"),("H3","old")]
+    q00_result = [np.zeros(numTest), np.zeros(numTest), np.zeros(numTest),
+              np.zeros(numTest)]
+              
+              
+#   Multithreaded "starmap" section, each fn call passes two args
+    with Pool(cpu_count()) as workPool:
+        q11c_result = workPool.starmap(monopoleModel, q00_inputArgs)
+        workPool.close()
+        workPool.join()
+    # Result now contains:  O1_old, H2_new, H2_old, H3_new, H3_old
+#    q00_result = np.column_stack((O1_q00_predicted, q00_result))
+
+## figure out how to put things to the start of the list
+
+
+
+
     
     O1_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )
     H2_q00_Model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )
@@ -255,61 +309,52 @@ if __name__ == '__main__':
     #-----------------------------------------------------------------------------------------
 
     def dipoleModel(atom, newOrOld):
+#   Purpose: Calculates the dipole value
+#   Usage: Accepts atom type and if new or old model and calculates the dipole value.
         model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
-        # Make a version for the old model
-        # Return the function from the branch directly.
         if( newOrOld == "new" ):
             if(atom == "O1"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
                 trainOut = O1moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
                 testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
-                return model.predict(testIn)
-
             if(atom == "H2"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
                 trainOut = H2moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
-                testIn = np.column_stack(( geometry[-1*numTest:,:], H2_q00_predicted ))
-                return model.predict(testIn)
-                
+                testIn = np.column_stack(( geometry[-1*numTest:,:], H2_q00_predicted )) 
             if(atom == "H3"):
                 trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
                 trainOut = H3moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
                 testIn = np.column_stack(( geometry[-1*numTest:,:], H3_q00_predicted ))
-                return model.predict(testIn)
+            model.fit(trainIn, trainOut)
+            return model.predict(testIn)
                 
         if(newOrOld=="old"):
             trainIn = geometry[:-1*numTest,:]
             testIn = geometry[-1*numTest:,:]
             if(atom == "O1"):
                 trainOut = O1moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
-                return model.predict(testIn)
-
             if(atom == "H2"):
                 trainOut = H2moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
-                return model.predict(testIn)
-                
             if(atom == "H3"):
-                trainOut = H3moments[:-1*numTest, 1]
-                model.fit(trainIn, trainOut)
-                return model.predict(testIn)
-#   Input arguments for multi threading "starmap" routine           
-    inputArgs = [("O1","new"),("O1","old"),("H2","new"),("H2","old"),("H3","new"),("H3","old")]
-    result = [np.zeros(numTest), np.zeros(numTest), np.zeros(numTest),
-              np.zeros(numTest), np.zeros(numTest), np.zeros(numTest)]
+                trainOut = H3moments[:-1*numTest, 1]  
+            model.fit(trainIn, trainOut)
+            return model.predict(testIn)
+            
+#   Input arguments for multi threading "starmap" routine     
+#           For an example of starmap for multicore processing see:  
+#           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
+    q11c_inputArgs = [("O1","new"),("O1","old"),("H2","new"),("H2","old"),("H3","new"),("H3","old")]
+    q11c_result = [np.empty(numTest), np.empty(numTest), np.empty(numTest),
+              np.empty(numTest), np.empty(numTest), np.empty(numTest)]
               
 #   Multithreaded "starmap" section, each fn call passes two args
     with Pool(cpu_count()) as workPool:
-        result = workPool.starmap(dipoleModel, inputArgs)
+        q11c_result = workPool.starmap(dipoleModel, q11c_inputArgs)
         workPool.close()
         workPool.join()
 
-#    printError( result[0], result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
-#    printError( result[2], result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
-#    printError( result[4], result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
+#    printError( q11c_result[0], q11c_result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
+#    printError( q11c_result[2], q11c_result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
+#    printError( q11c_result[4], q11c_result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
 
     
