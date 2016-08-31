@@ -22,3 +22,4 @@
 ![Alt text](/Analysis/cumulative_H2_q00_error.png?raw=true "New vs old method")
 
 * Need to look at the H3 atom's monopole, then start moving onto dipoles.
+* Reduce the number of outliers using a DBSCAN clustering method.
