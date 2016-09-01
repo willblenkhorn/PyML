@@ -33,7 +33,6 @@ from sklearn.svm import SVR
 import matplotlib.pyplot as plt
 import seaborn as sns # nice theme <<< OPTIONAL >>
 from multiprocessing import Pool, freeze_support, cpu_count
-import numba
 
 
 def printError( newPred, oldPred, truth, title ):
@@ -79,9 +78,9 @@ def debugPrintFns():
     sumHX_q00_predictedOld =  q00_result[2] + q00_result[4]     # These are the predicted sums (geom)
     sumHX_q00_predicted = q00_result[1] + q00_result[3]         # These are the predicted sums (geom + moments)
     sumHXmoments = H2moments + H3moments                        # These are the "true" calculated values
-    plt.scatter(sumHX_q00_predictedOld, O1_q00_predicted, c='g', s=8, label='Predicted from geometry') 
+    plt.scatter(sumHX_q00_predictedOld, q00_result[0], c='g', s=8, label='Predicted from geometry') 
     plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='True values')
-    plt.scatter( sumHX_q00_predicted, O1_q00_predicted, c='b', s=8, label='Predicted from monopole and geometry')
+    plt.scatter( sumHX_q00_predicted, q00_result[0], c='b', s=8, label='Predicted from monopole and geometry')
     
     # NB the prediction of oxygen is from geometry in both cases
     plt.xlabel( 'Sum Hydrogen 2 & 3 q00' )
@@ -124,6 +123,7 @@ def debugPrintFns():
     #===================================================================================
 
 if __name__ == '__main__':
+    
     freeze_support() # Windows specific, multithreaded crash handling
     numTest = 2000 # number of test data points out of the total input data of 3997 points  
     #===============================================================================
@@ -254,6 +254,5 @@ if __name__ == '__main__':
     printError( q11c_result[0], q11c_result[1], O1moments[-1*numTest:,1], 'O1_q11c' )
     printError( q11c_result[2], q11c_result[3], H2moments[-1*numTest:,1], 'H2_q11c' )
     printError( q11c_result[4], q11c_result[5], H3moments[-1*numTest:,1], 'H3_q11c' )
-
+#    debugPrintFns(q00_result, numTest, O1moments, H2moments, H3moments, geometry)
     
-
