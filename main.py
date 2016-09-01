@@ -76,11 +76,11 @@ def debugPrintFns():
     #===================================================================================
     # graph to show conservation of monopole moment is preserved in a good model
     #-----------------------------------------------------------------------------------
-    sumHX_q00_predictedOld = H2_q00_predictedOld + H2_q00_predictedOld # These are the predicted sums (geom)
-    sumHX_q00_predicted = H3_q00_predicted + H2_q00_predicted # These are the predicted sums (geom + moments)
-    sumHXmoments = H2moments + H3moments                      # These are the "true" calculated values
+    sumHX_q00_predictedOld =  q00_result[2] + q00_result[4]     # These are the predicted sums (geom)
+    sumHX_q00_predicted = q00_result[1] + q00_result[3]         # These are the predicted sums (geom + moments)
+    sumHXmoments = H2moments + H3moments                        # These are the "true" calculated values
     plt.scatter(sumHX_q00_predictedOld, O1_q00_predicted, c='g', s=8, label='Predicted from geometry') 
-    plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='Calculated')
+    plt.scatter( sumHXmoments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='True values')
     plt.scatter( sumHX_q00_predicted, O1_q00_predicted, c='b', s=8, label='Predicted from monopole and geometry')
     
     # NB the prediction of oxygen is from geometry in both cases
@@ -95,7 +95,7 @@ def debugPrintFns():
     # graph to show O1 vs H2 monopole moment is predicted well by model
     #-----------------------------------------------------------------------------------
     plt.scatter( H2moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
-    plt.scatter(H2_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
+    plt.scatter(q00_result[1], q00_result[0], c='b', s=8, label='predicted') # H2_new and O1 predicted values
     plt.xlabel( 'Hydrogen 2 q00' )
     plt.ylabel( 'Oxygen 1 q00' )
     plt.title( 'O1 q00 vs. Hydrogen 2 q00' )
@@ -105,7 +105,7 @@ def debugPrintFns():
     # graph to show O1 vs H3 monopole moment is predicted well by model
     #-----------------------------------------------------------------------------------
     plt.scatter( H3moments[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
-    plt.scatter(H3_q00_predicted, O1_q00_predicted, c='b', s=8, label='predicted')
+    plt.scatter(q00_result[3], q00_result[0], c='b', s=8, label='predicted') # H3_new and O1_q00 predicted values
     plt.xlabel( 'Hydrogen 3 q00' )
     plt.ylabel( 'Oxygen 1 q00' )
     plt.title( 'O1 q00 vs. Hydrogen 3 q00' )
@@ -115,7 +115,7 @@ def debugPrintFns():
     # graph to show O1 monopole moment vs bondlen1 is predicted well by model
     #-----------------------------------------------------------------------------------
     plt.scatter( geometry[-1*numTest:,0], O1moments[-1*numTest:,0], c='r', s=8, label='calculated')
-    plt.scatter( geometry[-1*numTest:,0], O1_q00_predicted, c='b', s=8, label='predicted')
+    plt.scatter( geometry[-1*numTest:,0], q00_result[0], c='b', s=8, label='predicted') # Geometry and O1_q00
     plt.xlabel( 'bond length1' )
     plt.ylabel( 'Oxygen 1 q00' )
     plt.title( 'O1 q00 vs. bond length1' )
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     #     TODO: 
     #-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
     #===============================================================================
-    @numba.jit
+    
     def monopoleModel(atom, newOrOld):
 #   Purpose: Calculates the monopole value
 #   Usage: Accepts atom type and if new or old model
@@ -199,10 +199,10 @@ if __name__ == '__main__':
         q00_result = workPool.starmap(monopoleModel, q00_inputArgs)
         workPool.close()
         workPool.join()
-    # Result now contains:  O1_old, H2_new, H2_old, H3_new, H3_old
+    # Result now contains, in order:  O1_old, H2_new, H2_old, H3_new, H3_old
     q00_result.insert(0,O1_q00_predicted)
 
-    @numba.jit()
+    
     def dipoleModel(atom, newOrOld):
 #   Purpose: Calculates the dipole value
 #   Usage: Accepts atom type and if new or old model and calculates the dipole value.
