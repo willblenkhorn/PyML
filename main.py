@@ -122,171 +122,174 @@ def debugPrintFns():
     plt.show()
     #===================================================================================
 
-if __name__ == '__main__':
-    
-    freeze_support() # Windows specific, multithreaded crash handling
-    numTest = 2000 # number of test data points out of the total input data of 3997 points  
-    #===============================================================================
-    # TODO: Create input data processesing function to select columns in input 
-    #       which have a mean and stdev <1E-5 (or programmable threshold)
-    #===============================================================================
-    
-    # input data for each atom
-    O1rawData = np.loadtxt(open("O1_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
-    H2rawData = np.loadtxt(open("H2_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
-    H3rawData = np.loadtxt(open("H3_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
-    
-    # Selected the valid moments, which change appreciably and excluded non-descriptive ones.
-    O1moments = np.column_stack( (O1rawData[:,3], O1rawData[:,5:8], O1rawData[:,10:12], 
-                                  O1rawData[:,13:15], O1rawData[:,17:20], 
-    O1rawData[:,22:24], O1rawData[:,26:28]) )
-    
-    H2moments = np.column_stack( (H2rawData[:,3], H2rawData[:,5:8], H2rawData[:,10:12], 
-                                  H2rawData[:,13:15], H2rawData[:,17:20], 
-    H2rawData[:,22:24], H2rawData[:,26:28]) )
-    
-    H3moments = np.column_stack( (H3rawData[:,3], H3rawData[:,5:8], H3rawData[:,10:12], 
-                                  H3rawData[:,13:15], H3rawData[:,17:20], 
-    H3rawData[:,22:24], H3rawData[:,26:28]) )
-    
-    geometry = O1rawData[:,:3]
-    #===============================================================================
-    #     TODO: 
-    #-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
-    #===============================================================================
-    
-    def monopoleModel(atom, newOrOld):
+#if __name__ == '__main__':
+
+freeze_support() # Windows specific, multithreaded crash handling
+numTest = 2000 # number of test data points out of the total input data of 3997 points  
+#===============================================================================
+# TODO: Create input data processesing function to select columns in input 
+#       which have a mean and stdev <1E-5 (or programmable threshold)
+#===============================================================================
+
+# input data for each atom
+O1rawData = np.loadtxt(open("O1_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
+H2rawData = np.loadtxt(open("H2_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
+H3rawData = np.loadtxt(open("H3_TRAINING_SET_labelled_notop2.csv","rb"),delimiter=",",skiprows=1 )
+
+# Selected the valid moments, which change appreciably and excluded non-descriptive ones.
+O1moments = np.column_stack( (O1rawData[:,3], O1rawData[:,5:8], O1rawData[:,10:12], 
+                              O1rawData[:,13:15], O1rawData[:,17:20], 
+O1rawData[:,22:24], O1rawData[:,26:28]) )
+
+H2moments = np.column_stack( (H2rawData[:,3], H2rawData[:,5:8], H2rawData[:,10:12], 
+                              H2rawData[:,13:15], H2rawData[:,17:20], 
+H2rawData[:,22:24], H2rawData[:,26:28]) )
+
+H3moments = np.column_stack( (H3rawData[:,3], H3rawData[:,5:8], H3rawData[:,10:12], 
+                              H3rawData[:,13:15], H3rawData[:,17:20], 
+H3rawData[:,22:24], H3rawData[:,26:28]) )
+
+geometry = O1rawData[:,:3]
+#===============================================================================
+#     TODO: 
+#-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
+#===============================================================================
+
+def monopoleModel(atom, newOrOld):
 #   Purpose: Calculates the monopole value
 #   Usage: Accepts atom type and if new or old model
-        model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
-        if( newOrOld == "new" ):
-            if(atom == "H2"):
-                trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
-                trainOut = H2moments[:-1*numTest, 0]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) 
-            if(atom == "H3"):
-                trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
-                trainOut = H3moments[:-1*numTest, 0]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
-            model.fit(trainIn, trainOut)
-            return model.predict(testIn)
-                
-        if(newOrOld=="old"):
-            trainIn = geometry[:-1*numTest,:]
-            testIn = geometry[-1*numTest:,:]
-            if(atom == "H2"):
-                trainOut = H2moments[:-1*numTest, 0]
-            if(atom == "H3"):
-                trainOut = H3moments[:-1*numTest, 0]  
-            model.fit(trainIn, trainOut)
-            return model.predict(testIn)
+    model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
+    if( newOrOld == "new" ):
+        if(atom == "H2"):
+            trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+            trainOut = H2moments[:-1*numTest, 0]
+            testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted )) 
+        if(atom == "H3"):
+            trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+            trainOut = H3moments[:-1*numTest, 0]
+            testIn = np.column_stack(( geometry[-1*numTest:,:], O1_q00_predicted ))
+        model.fit(trainIn, trainOut)
+        return model.predict(testIn)
             
-    # Calculate the oxygen's monopole before starting threaded section
-    O1_q00_model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
-    O1_q00_trainIn = geometry[:-1*numTest,:]
-    O1_q00_trainOut = O1moments[:-1*numTest, 0]
-    O1_q00_testIn = geometry[-1*numTest:,:] 
-    O1_q00_model.fit(O1_q00_trainIn, O1_q00_trainOut)
-    O1_q00_predicted = O1_q00_model.predict(O1_q00_testIn)
-            
-#   Input arguments for multi threading "starmap" routine           
-    q00_inputArgs = [("H2","new"),("H2","old"),("H3","new"),("H3","old")]
-    q00_result = [np.empty(numTest), np.empty(numTest), np.empty(numTest),
-              np.empty(numTest)]        
-              
-#   Multithreaded "starmap" section, each fn call passes two args
-    with Pool(cpu_count()) as workPool:
-        q00_result = workPool.starmap(monopoleModel, q00_inputArgs)
-        workPool.close()
-        workPool.join()
-    # Result now contains, in order:  O1_old, H2_new, H2_old, H3_new, H3_old
-    q00_result.insert(0,O1_q00_predicted)
-
-    
-    def calcAllMoments(atom, newOrOld, momNum):
-    #   Purpose: Calculates the the moment value using the atom's monopole and the geometry as reference
-    #   Usage: Accepts atom type and if new or old model and the momentNumber
-    #          Moment number is used to reference the AtomMoments array inside the function
-    #   NOTE: This code will break when you change the number of atoms from 3, it's a hack
-        model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
-        if( newOrOld == "new" ):
-            if(atom == "O1"):
-                trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
-                trainOut = O1moments[:-1*numTest, momNum]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[0] ))
-            if(atom == "H2"):
-                trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
-                trainOut = H2moments[:-1*numTest, momNum]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[1] )) 
-            if(atom == "H3"):
-                trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
-                trainOut = H3moments[:-1*numTest, momNum]
-                testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[3] ))
-            model.fit(trainIn, trainOut)
-            return model.predict(testIn)
-    
-        if(newOrOld=="old"):
-            trainIn = geometry[:-1*numTest,:]
-            testIn = geometry[-1*numTest:,:]
-            if(atom == "O1"):
-                trainOut = O1moments[:-1*numTest, momNum]
-            if(atom == "H2"):
-                trainOut = H2moments[:-1*numTest, momNum]
-            if(atom == "H3"):
-                trainOut = H3moments[:-1*numTest, momNum]  
-            model.fit(trainIn, trainOut)
-            return model.predict(testIn)
-    
-#    calcAllMoments("O1", "new", 4)
-    
-    numAtoms = 3
-    OldModel = True
-    # Shape returns (rows, cols), selecting npArray.shape[1] .: gives cols
-    numMoments = O1moments.shape[1]  # since we caculated monopole as a special case iterate from 1
-    
-    # Create 2D matrix of input arguments, with a tuple or arguments in each 
-    # First three nested lists are created and edited and the final list is then converted to a tuple
-    calcAllMoments_inputArgs = [[["O1","old",j] for i in range(numAtoms*2)] for j in range(1,numMoments)]
-
-    # Reassign every second column to the 'new' model
-    for i in range(numMoments-1): # rows for atoms
-        for j in range( 0, numAtoms*2, 2 ): # columns for multipole moments
-            calcAllMoments_inputArgs[i][j][1] = 'new'
-    
-    # Reassign correct atoms to H2 atoms, stride 3
-    for i in range(numMoments-1): # rows for atom's moments
-        for j in range( 1, numAtoms*2-1, 3 ): # columns for atoms
-            calcAllMoments_inputArgs[i][j][0] = 'H2'
-    
-    # Reassign correct atoms to H3 atoms, stride 3
-    for i in range(numMoments-1): # rows for atom's moments
-        for j in range( 2, numAtoms*2, 3 ): # columns for atoms
-            calcAllMoments_inputArgs[i][j][0] = 'H3'
-    
-    # Reassign every element to a tuple
-    for i in range(numMoments-1): # rows for atoms
-        for j in range( numAtoms*2 ): # columns for multipole moments
-            calcAllMoments_inputArgs[i][j] = tuple( calcAllMoments_inputArgs[i][j] )
-            
+    if(newOrOld=="old"):
+        trainIn = geometry[:-1*numTest,:]
+        testIn = geometry[-1*numTest:,:]
+        if(atom == "H2"):
+            trainOut = H2moments[:-1*numTest, 0]
+        if(atom == "H3"):
+            trainOut = H3moments[:-1*numTest, 0]  
+        model.fit(trainIn, trainOut)
+        return model.predict(testIn)
         
-    import itertools as itr   
-    # this magic creates the matrix by "repeating" a numpy vector into a list and then "repeating" that list to give a 2D matrix of numpy vectors
-    allMomentsPredicted = list(itr.repeat(list(itr.repeat( np.zeros(numTest),numAtoms*2)),numMoments-1))
-             
-    # Initiate multithreaded pool with cpu_count() with "starmap" routine     
-    #           For an example of starmap for multicore processing see:  
-    #           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
-    
-    # Initialise a pool 
-    with Pool(cpu_count()) as workPool:
-        for i in range(0,numMoments-1):
-            # Formatted printing to determine calculation progress   Docs:  https://docs.python.org/3/tutorial/inputoutput.html
-            print("Predicting moment {} \t {:.0f}% done".format( (i+1), ((i+1)/numMoments)*100 ) )
-            
-            # Do work with pool instance, put the results in allMomentsPredicted, use calcAllMoments function and calcAllMoments_inputArgs as input
-            allMomentsPredicted[i] = workPool.starmap( calcAllMoments, calcAllMoments_inputArgs[i] )
-    
-    # Details for stopping the pool's parallel execution
+# Calculate the oxygen's monopole before starting threaded section
+O1_q00_model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
+O1_q00_trainIn = geometry[:-1*numTest,:]
+O1_q00_trainOut = O1moments[:-1*numTest, 0]
+O1_q00_testIn = geometry[-1*numTest:,:] 
+O1_q00_model.fit(O1_q00_trainIn, O1_q00_trainOut)
+O1_q00_predicted = O1_q00_model.predict(O1_q00_testIn)
+        
+#   Input arguments for multi threading "starmap" routine           
+q00_inputArgs = [("H2","new"),("H2","old"),("H3","new"),("H3","old")]
+q00_result = [np.empty(numTest), np.empty(numTest), np.empty(numTest),
+          np.empty(numTest)]        
+          
+#   Multithreaded "starmap" section, each fn call passes two args
+with Pool(cpu_count()) as workPool:
+    q00_result = workPool.starmap(monopoleModel, q00_inputArgs)
     workPool.close()
     workPool.join()
-    print("Done")
+# Result now contains, in order:  O1_old, H2_new, H2_old, H3_new, H3_old
+q00_result.insert(0,O1_q00_predicted)
+
+
+def calcAllMoments(atom, newOrOld, momNum):
+#   Purpose: Calculates the the moment value using the atom's monopole and the geometry as reference
+#   Usage: Accepts atom type and if new or old model and the momentNumber
+#          Moment number is used to reference the AtomMoments array inside the function
+#   NOTE: This code will break when you change the number of atoms from 3, it's a hack
+    model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
+    if( newOrOld == "new" ):
+        if(atom == "O1"):
+            trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+            trainOut = O1moments[:-1*numTest, momNum]
+            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[0] ))
+        if(atom == "H2"):
+            trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
+            trainOut = H2moments[:-1*numTest, momNum]
+            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[1] )) 
+        if(atom == "H3"):
+            trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
+            trainOut = H3moments[:-1*numTest, momNum]
+            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[3] ))
+        model.fit(trainIn, trainOut)
+        return model.predict(testIn)
+
+    if(newOrOld=="old"):
+        trainIn = geometry[:-1*numTest,:]
+        testIn = geometry[-1*numTest:,:]
+        if(atom == "O1"):
+            trainOut = O1moments[:-1*numTest, momNum]
+        if(atom == "H2"):
+            trainOut = H2moments[:-1*numTest, momNum]
+        if(atom == "H3"):
+            trainOut = H3moments[:-1*numTest, momNum]  
+        model.fit(trainIn, trainOut)
+        return model.predict(testIn)
+
+#    calcAllMoments("O1", "new", 4)
+
+numAtoms = 3
+OldModel = True
+# Shape returns (rows, cols), selecting npArray.shape[1] .: gives cols
+numMoments = O1moments.shape[1]  # since we caculated monopole as a special case iterate from 1
+
+# Create 2D matrix of input arguments, with a tuple or arguments in each 
+# First three nested lists are created and edited and the final list is then converted to a tuple
+calcAllMoments_inputArgs = [[["O1","old",j] for i in range(numAtoms*2)] for j in range(1,numMoments)]
+
+# Reassign every second column to the 'new' model
+for i in range(numMoments-1): # rows for atoms
+    for j in range( 0, numAtoms*2, 2 ): # columns for multipole moments
+        calcAllMoments_inputArgs[i][j][1] = 'new'
+
+
+# Reassign correct atoms to H2 atoms, stride 3
+for i in range(numMoments-1): # rows for atom's moments
+    for j in range( 2, numAtoms*2-2 ): # columns for atoms
+        calcAllMoments_inputArgs[i][j][0] = 'H2'
+
+
+# Reassign correct atoms to H3 atoms, stride 3
+for i in range(numMoments-1): # rows for atom's moments
+    for j in range( 4, numAtoms*2 ): # columns for atoms
+        calcAllMoments_inputArgs[i][j][0] = 'H3'
+
+
+# Reassign every element to a tuple
+for i in range(numMoments-1): # rows for atoms
+    for j in range( numAtoms*2 ): # columns for multipole moments
+        calcAllMoments_inputArgs[i][j] = tuple( calcAllMoments_inputArgs[i][j] )
+        
+    
+import itertools as itr   
+# this magic creates the matrix by "repeating" a numpy vector into a list and then "repeating" that list to give a 2D matrix of numpy vectors
+allMomentsPredicted = list(itr.repeat(list(itr.repeat( np.zeros(numTest),numAtoms*2)),numMoments-1))
+         
+# Initiate multithreaded pool with cpu_count() with "starmap" routine     
+#           For an example of starmap for multicore processing see:  
+#           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
+
+## Initialise a pool 
+with Pool(cpu_count()) as workPool:
+    for i in range(0,numMoments-1):
+        # Formatted printing to determine calculation progress   Docs:  https://docs.python.org/3/tutorial/inputoutput.html
+        print("Predicting moment {} \t {:.0f}% done".format( (i+1), ((i+1)/numMoments)*100 ) )
+        
+        # Do work with pool instance, put the results in allMomentsPredicted, use calcAllMoments function and calcAllMoments_inputArgs as input
+        allMomentsPredicted[i] = workPool.starmap( calcAllMoments, calcAllMoments_inputArgs[i] )
+
+# Details for stopping the pool's parallel execution
+workPool.close()
+workPool.join()
+print("Done")
