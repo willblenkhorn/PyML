@@ -1,7 +1,7 @@
 # PyML -- Python support vector machine experiment to predict atom's MM in a heirachical manner
 -------
 
-##### Pre-Alpha state
+##### Alpha state
 ###### Requires sklearn, matplotlib, numpy and optionally seaborn for better graphics.
 
 ## News:
