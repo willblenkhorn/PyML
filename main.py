@@ -33,43 +33,8 @@ from sklearn.svm import SVR
 import matplotlib.pyplot as plt
 import seaborn as sns # nice theme <<< OPTIONAL >>
 from multiprocessing import Pool, freeze_support, cpu_count
+from sklearn import preprocessing
 
-
-def printError( newPred, oldPred, truth, title ):
-    #=================================================================================
-    # A log-linear histogram of the newPrediction model and oldPrediction model's error
-    # 
-    #   Usage:     printError( O1_q11c_predicted, O1_q11c_predictedOld, O1moments[-1*numTest:,1], 'O1_q11c' )
-    #----------------------------------------------------------------%prun -l-----------------
-    # calculate distribution of error in the new and older model
-    #       Compare the newPrediction and oldPrection agaisnt the truth
-    newPred_ErrorDist = np.abs( np.abs( newPred ) - np.abs( truth ) ) 
-    oldPred_ErrorDist = np.abs( np.abs( oldPred ) - np.abs( truth ) ) 
-    MIN, MAX = .00001, 0.1
-    plt.figure()
-    
-    n, bins, patches = plt.hist( newPred_ErrorDist, 
-                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
-    normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
-    
-    n, bins, patches = plt.hist( oldPred_ErrorDist, 
-                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
-    normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
-    
-    plt.gca().set_xscale("log")
-    plt.xlabel( 'Magnitude of '+ title + ' error' )
-    plt.ylabel( 'Cumerlative Number Fraction' )
-    plt.title('Cumulative '+ title+ ' Error Distribution')
-    plt.grid(True)
-    plt.ylim(0, 1.065)
-    plt.legend(loc='upper left', shadow=True, fontsize='large')
-    plt.savefig('cumulative_'+ title+ '_error.png',dpi=600)
-    plt.show()
-    
-    newPred_avError = np.mean( newPred_ErrorDist )
-    oldPred_avError = np.mean( oldPred_ErrorDist )
-    percImproved = ( oldPred_avError - newPred_avError ) / newPred_avError * 100
-    print("The average improvement from including other moments is ", percImproved, "%" )
 
 def debugPrintFns():
     #===================================================================================
@@ -150,6 +115,21 @@ H3moments = np.column_stack( (H3rawData[:,3], H3rawData[:,5:8], H3rawData[:,10:1
 H3rawData[:,22:24], H3rawData[:,26:28]) )
 
 geometry = O1rawData[:,:3]
+
+# Apply standard scaler to input data
+O1momentsTrans = preprocessing.StandardScaler().fit(O1moments) 	# To fit standardisation transform
+O1moments = O1momentsTrans.transform(O1moments)			# To transform
+
+H2momentsTrans = preprocessing.StandardScaler().fit(H2moments) 	# To fit standardisation transform
+H2moments = O1momentsTrans.transform(H2moments)			# To transform
+
+H3momentsTrans = preprocessing.StandardScaler().fit(H3moments) 	# To fit standardisation transform
+H3moments = O1momentsTrans.transform(H3moments)			# To transform
+
+geometryTrans = preprocessing.StandardScaler().fit(geometry) 	# To fit standardisation transform
+geometry = geometryTrans.transform(geometry)			    # To transform
+
+
 #===============================================================================
 #     TODO: 
 #-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
@@ -182,7 +162,7 @@ def monopoleModel(atom, newOrOld):
         return model.predict(testIn)
         
 # Calculate the oxygen's monopole before starting threaded section
-O1_q00_model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 ) 
+O1_q00_model = SVR( kernel='rbf', C=108, gamma=0.13, epsilon =0.001 ) 
 O1_q00_trainIn = geometry[:-1*numTest,:]
 O1_q00_trainOut = O1moments[:-1*numTest, 0]
 O1_q00_testIn = geometry[-1*numTest:,:] 
@@ -203,93 +183,165 @@ with Pool(cpu_count()) as workPool:
 q00_result.insert(0,O1_q00_predicted)
 
 
-def calcAllMoments(atom, newOrOld, momNum):
-#   Purpose: Calculates the the moment value using the atom's monopole and the geometry as reference
-#   Usage: Accepts atom type and if new or old model and the momentNumber
-#          Moment number is used to reference the AtomMoments array inside the function
-#   NOTE: This code will break when you change the number of atoms from 3, it's a hack
-    model = SVR( kernel='rbf', C=5E3, gamma=0.001, epsilon =0.001 )    
-    if( newOrOld == "new" ):
-        if(atom == "O1"):
-            trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
-            trainOut = O1moments[:-1*numTest, momNum]
-            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[0] ))
-        if(atom == "H2"):
-            trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
-            trainOut = H2moments[:-1*numTest, momNum]
-            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[1] )) 
-        if(atom == "H3"):
-            trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
-            trainOut = H3moments[:-1*numTest, momNum]
-            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[3] ))
-        model.fit(trainIn, trainOut)
-        return model.predict(testIn)
 
-    if(newOrOld=="old"):
-        trainIn = geometry[:-1*numTest,:]
-        testIn = geometry[-1*numTest:,:]
-        if(atom == "O1"):
-            trainOut = O1moments[:-1*numTest, momNum]
-        if(atom == "H2"):
-            trainOut = H2moments[:-1*numTest, momNum]
-        if(atom == "H3"):
-            trainOut = H3moments[:-1*numTest, momNum]  
-        model.fit(trainIn, trainOut)
-        return model.predict(testIn)
+#======================================================================
+# scale the data back using the inverse_transform
+# outputTemplate matches the shape of the input moments matrix
+# the moment of interest is put in the correct column in this zero'd matrix.
+H2outputTemplateNew = np.zeros((numTest, H2moments.shape[1]))
+H2outputTemplateOld = np.zeros((numTest, H2moments.shape[1]))
+H2outputTemplateNew[:,0] = q00_result[1]
+H2outputTemplateOld[:,0] = q00_result[2]
 
-#    calcAllMoments("O1", "new", 4)
-
-numAtoms = 3
-OldModel = True
-# Shape returns (rows, cols), selecting npArray.shape[1] .: gives cols
-numMoments = O1moments.shape[1]  # since we caculated monopole as a special case iterate from 1
-
-# Create 2D matrix of input arguments, with a tuple or arguments in each 
-# First three nested lists are created and edited and the final list is then converted to a tuple
-calcAllMoments_inputArgs = [[["O1","old",j] for i in range(numAtoms*2)] for j in range(1,numMoments)]
-
-# Reassign every second column to the 'new' model
-for i in range(numMoments-1): # rows for atoms
-    for j in range( 0, numAtoms*2, 2 ): # columns for multipole moments
-        calcAllMoments_inputArgs[i][j][1] = 'new'
+transformPredH2New = H2momentsTrans.inverse_transform(H2outputTemplateNew)
+transformPredH2Old = H2momentsTrans.inverse_transform(H2outputTemplateOld)
+transformTrueH2 = H2momentsTrans.inverse_transform(H2moments)
 
 
-# Reassign correct atoms to H2 atoms, stride 3
-for i in range(numMoments-1): # rows for atom's moments
-    for j in range( 2, numAtoms*2-2 ): # columns for atoms
-        calcAllMoments_inputArgs[i][j][0] = 'H2'
+H3outputTemplateNew = np.zeros((numTest, H3moments.shape[1]))
+H3outputTemplateOld = np.zeros((numTest, H3moments.shape[1]))
+H3outputTemplateNew[:,0] = q00_result[3]
+H3outputTemplateOld[:,0] = q00_result[4]
+
+transformPredH3New = H2momentsTrans.inverse_transform(H3outputTemplateNew)
+transformPredH3Old = H2momentsTrans.inverse_transform(H3outputTemplateOld)
+transformTrueH3 = H2momentsTrans.inverse_transform(H3moments)
+#======================================================================
 
 
-# Reassign correct atoms to H3 atoms, stride 3
-for i in range(numMoments-1): # rows for atom's moments
-    for j in range( 4, numAtoms*2 ): # columns for atoms
-        calcAllMoments_inputArgs[i][j][0] = 'H3'
+def printError( newPred, oldPred, truth, title ):
+    #=================================================================================
+    # A log-linear histogram of the newPrediction model and oldPrediction model's error
+    # 
+    #   Usage:     printError( O1_q11c_predicted, O1_q11c_predictedOld, O1moments[-1*numTest:,1], 'O1_q11c' )
+    #----------------------------------------------------------------%prun -l-----------------
+    # calculate distribution of error in the new and older model
+    #       Compare the newPrediction and oldPrection agaisnt the truth
 
-
-# Reassign every element to a tuple
-for i in range(numMoments-1): # rows for atoms
-    for j in range( numAtoms*2 ): # columns for multipole moments
-        calcAllMoments_inputArgs[i][j] = tuple( calcAllMoments_inputArgs[i][j] )
-        
+    newPred_ErrorDist = np.abs( np.abs( newPred ) - np.abs( truth ) ) 
+    oldPred_ErrorDist = np.abs( np.abs( oldPred ) - np.abs( truth ) ) 
+    MIN, MAX = .0000001, 0.001 ## NEW
+    plt.figure()
     
-import itertools as itr   
-# this magic creates the matrix by "repeating" a numpy vector into a list and then "repeating" that list to give a 2D matrix of numpy vectors
-allMomentsPredicted = list(itr.repeat(list(itr.repeat( np.zeros(numTest),numAtoms*2)),numMoments-1))
-         
-# Initiate multithreaded pool with cpu_count() with "starmap" routine     
-#           For an example of starmap for multicore processing see:  
-#           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
+    n, bins, patches = plt.hist( newPred_ErrorDist, 
+                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+    normed=1, histtype='step', cumulative=True, color='r', linewidth=2, label='Moments and geometry' )
+    
+    n, bins, patches = plt.hist( oldPred_ErrorDist, 
+                                bins = 10 ** np.linspace(np.log10(MIN), np.log10(MAX), 50),
+    normed=1,histtype='step', cumulative=True,color='b', linewidth=2, label='Geometry only' )
+    
+    plt.gca().set_xscale("log")
+    plt.xlabel( 'Magnitude of '+ title + ' error' )
+    plt.ylabel( 'Cumerlative Number Fraction' )
+    plt.title('Cumulative '+ title+ ' Error Distribution')
+    plt.grid(True)
+    plt.ylim(0, 1.065)
+    plt.legend(loc='upper left', shadow=True, fontsize='large')
+    plt.savefig('cumulative_'+ title+ '_error.png',dpi=600)
+    plt.show()
+    
+    newPred_avError = np.mean( newPred_ErrorDist )
+    oldPred_avError = np.mean( oldPred_ErrorDist )
+    percImproved = ( oldPred_avError - newPred_avError ) / newPred_avError * 100
+    print("The average improvement from including other moments is ", percImproved, "%" )
 
-## Initialise a pool 
-with Pool(cpu_count()) as workPool:
-    for i in range(0,numMoments-1):
-        # Formatted printing to determine calculation progress   Docs:  https://docs.python.org/3/tutorial/inputoutput.html
-        print("Predicting moment {} \t {:.0f}% done".format( (i+1), ((i+1)/numMoments)*100 ) )
-        
-        # Do work with pool instance, put the results in allMomentsPredicted, use calcAllMoments function and calcAllMoments_inputArgs as input
-        allMomentsPredicted[i] = workPool.starmap( calcAllMoments, calcAllMoments_inputArgs[i] )
+printError( transformPredH2New[:,0], transformPredH2Old[:,0], transformTrueH2[-1*numTest:,0], "Standard scaled new vs old model" )
 
-# Details for stopping the pool's parallel execution
-workPool.close()
-workPool.join()
-print("Done")
+
+
+
+
+## This function calculates all moments, the SVR kernel parameters for each moment would first need to be optimised
+
+
+#def calcAllMoments(atom, newOrOld, momNum):
+##   Purpose: Calculates the the moment value using the atom's monopole and the geometry as reference
+##   Usage: Accepts atom type and if new or old model and the momentNumber
+##          Moment number is used to reference the AtomMoments array inside the function
+##   NOTE: This code will break when you change the number of atoms from 3, it's a hack
+#    model = SVR( kernel='rbf', C=108, gamma=0.13, epsilon =0.001 )    
+#    if( newOrOld == "new" ):
+#        if(atom == "O1"):
+#            trainIn = np.column_stack(( geometry[:-1*numTest,:], O1moments[:-1*numTest, 0] ))
+#            trainOut = O1moments[:-1*numTest, momNum]
+#            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[0] ))
+#        if(atom == "H2"):
+#            trainIn = np.column_stack(( geometry[:-1*numTest,:], H2moments[:-1*numTest, 0] ))
+#            trainOut = H2moments[:-1*numTest, momNum]
+#            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[1] )) 
+#        if(atom == "H3"):
+#            trainIn = np.column_stack(( geometry[:-1*numTest,:], H3moments[:-1*numTest, 0] ))
+#            trainOut = H3moments[:-1*numTest, momNum]
+#            testIn = np.column_stack(( geometry[-1*numTest:,:], q00_result[3] ))
+#        model.fit(trainIn, trainOut)
+#        return model.predict(testIn)
+#
+#    if(newOrOld=="old"):
+#        trainIn = geometry[:-1*numTest,:]
+#        testIn = geometry[-1*numTest:,:]
+#        if(atom == "O1"):from sklearn import preprocessing
+#            trainOut = O1moments[:-1*numTest, momNum]
+#        if(atom == "H2"):
+#            trainOut = H2moments[:-1*numTest, momNum]
+#        if(atom == "H3"):
+#            trainOut = H3moments[:-1*numTest, momNum]  
+#        model.fit(trainIn, trainOut)
+#        return model.predict(testIn)
+#
+##    calcAllMoments("O1", "new", 4)
+#
+#numAtoms = 3
+#OldModel = True
+## Shape returns (rows, cols), selecting npArray.shape[1] .: gives cols
+#numMoments = O1moments.shape[1]  # since we caculated monopole as a special case iterate from 1
+#
+## Create 2D matrix of input arguments, with a tuple or arguments in each 
+## First three nested lists are created and edited and the final list is then converted to a tuple
+#calcAllMoments_inputArgs = [[["O1","old",j] for i in range(numAtoms*2)] for j in range(1,numMoments)]
+#
+## Reassign every second column to the 'new' model
+#for i in range(numMoments-1): # rows for atoms
+#    for j in range( 0, numAtoms*2, 2 ): # columns for multipole moments
+#        calcAllMoments_inputArgs[i][j][1] = 'new'
+#
+#
+## Reassign correct atoms to H2 atoms, stride 3
+#for i in range(numMoments-1): # rows for atom's moments
+#    for j in range( 2, numAtoms*2-2 ): # columns for atoms
+#        calcAllMoments_inputArgs[i][j][0] = 'H2'
+#
+#
+## Reassign correct atoms to H3 atoms, stride 3
+#for i in range(numMoments-1): # rows for atom's moments
+#    for j in range( 4, numAtoms*2 ): # columns for atoms
+#        calcAllMoments_inputArgs[i][j][0] = 'H3'
+#
+#
+## Reassign every element to a tuple
+#for i in range(numMoments-1): # rows for atoms
+#    for j in range( numAtoms*2 ): # columns for multipole moments
+#        calcAllMoments_inputArgs[i][j] = tuple( calcAllMoments_inputArgs[i][j] )
+#        
+#    
+#import itertools as itr   
+## this magic creates the matrix by "repeating" a numpy vector into a list and then "repeating" that list to give a 2D matrix of numpy vectors
+#allMomentsPredicted = list(itr.repeat(list(itr.repeat( np.zeros(numTest),numAtoms*2)),numMoments-1))
+#         
+## Initiate multithreaded pool with cpu_count() with "starmap" routine     
+##           For an example of starmap for multicore processing see:  
+##           http://stackoverflow.com/questions/5442910/python-multiprocessing-pool-map-for-multiple-arguments
+#
+### Initialise a pool 
+#with Pool(cpu_count()) as workPool:
+#    for i in range(0,numMoments-1):
+#        # Formatted printing to determine calculation progress   Docs:  https://docs.python.org/3/tutorial/inputoutput.html
+#        print("Predicting moment {} \t {:.0f}% done".format( (i+1), ((i+1)/numMoments)*100 ) )
+#        
+#        # Do work with pool instance, put the results in allMomentsPredicted, use calcAllMoments function and calcAllMoments_inputArgs as input
+#        allMomentsPredicted[i] = workPool.starmap( calcAllMoments, calcAllMoments_inputArgs[i] )
+#
+## Details for stopping the pool's parallel execution
+#workPool.close()
+#workPool.join()
+#print("Done")
