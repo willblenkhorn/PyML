@@ -244,10 +244,10 @@ def printError( newPred, oldPred, truth, title ):
     newPred_avError = np.mean( newPred_ErrorDist )
     oldPred_avError = np.mean( oldPred_ErrorDist )
     percImproved = ( oldPred_avError - newPred_avError ) / newPred_avError * 100
-    print("The average improvement from including other moments is ", percImproved, "%" )
+    print("The average improvement from including oxygen moment is ", percImproved, "%" )
 
 printError( transformPredH2New[:,0], transformPredH2Old[:,0], transformTrueH2[-1*numTest:,0], "Standard scaled new vs old model" )
-
+printError( transformPredH3New[:,0], transformPredH3Old[:,0], transformTrueH3[-1*numTest:,0], "H3 standard scaled new vs old model" )
 
 
 
