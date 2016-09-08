@@ -230,7 +230,7 @@ def printError( newPred, oldPred, truth, title ):
     plt.grid(True)
     plt.ylim(0, 1.065)
     plt.legend(loc='upper left', shadow=True, fontsize='large')
-    plt.savefig('cumulative_'+ title+ '_error.png',dpi=600)
+    plt.savefig('Analysis/cumulative_'+ title+ '_error.png',dpi=600)
     plt.show()
     
     newPred_avError = np.mean( newPred_ErrorDist )
