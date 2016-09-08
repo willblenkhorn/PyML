@@ -7,6 +7,10 @@
 * Download Python 3.X conda variant from: http://conda.pydata.org/miniconda.html
 * Once installed and in a new terminal run: **conda install scikit-learn matplotlib numpy seaborn scipy=0.17.1**
 
+#### Running the code
+* In a terminal type: **python3 main.py**
+* If you prefer an IDE, we used spyder, to install, **conda install spyder** and to run, **spyder** in the console.
+
 ## News:
 * Centred and scaled data, drastically improving accuracy from prototype by 100x.
 
