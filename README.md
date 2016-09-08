@@ -3,7 +3,7 @@
 
 ###### Requires sklearn, matplotlib, numpy and optionally seaborn for better graphics.
 ## Setup 
-### Using Conda
+#### Using Conda
 * Download Python 3.X conda variant from: http://conda.pydata.org/miniconda.html
 * Once installed and in a new terminal run: **conda install scikit-learn matplotlib numpy seaborn scipy=0.17.1**
 
