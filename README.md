@@ -1,6 +1,6 @@
 # PyML
 ## A Python support vector machine experiment to predict atomic multipole moments in a hierarchical manner
--------
+
 ###### Requires sklearn, matplotlib, numpy and optionally seaborn for better graphics.
 ## Setup 
 ### Using Conda
