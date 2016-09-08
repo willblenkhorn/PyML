@@ -87,7 +87,7 @@ def debugPrintFns():
 #if __name__ == '__main__':
 
 freeze_support() # Windows specific, multithreaded crash handling
-numTest = 2000 # number of test data points out of the total input data of 3997 points  
+numTest = 1000 # number of test data points out of the total input data of 3997 points  
 #===============================================================================
 # TODO: Create input data processesing function to select columns in input 
 #       which have a mean and stdev <1E-5 (or programmable threshold)
