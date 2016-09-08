@@ -244,7 +244,9 @@ printError( transformPredH3New[:,0], transformPredH3Old[:,0], transformTrueH3[-1
 
 
 
-## This function calculates all moments, the SVR kernel parameters for each moment would first need to be optimised
+## This function calculates all moments, 
+# 	The SVR kernel parameters for each moment first need to be optimised,
+#	but the existing values are a reasonable start
 
 
 #def calcAllMoments(atom, newOrOld, momNum):
