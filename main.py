@@ -2,6 +2,8 @@
 """
 Created on Mon Aug  1 10:31:55 2016
 Heirachical self consistent multipole approximation.
+@author: Josh Ring & Will Blenkhorn
+
 #----- Model Design ------------#
 ---------------------------------
 1.) Estimate monopole from geometry
@@ -12,11 +14,6 @@ Heirachical self consistent multipole approximation.
 Estimate monopole from gemoetry
 Insert geometry and the results for monopole prediction into the dipole prediction
 Insert geometry and the previous results... etc
-    To start a document sharing server:
-        infinoted --create-key --create-certificate -k key.pem  -c cert.pem
-        infinoted -k key.pem  -c cert.pem
-@author: josh + will
-29.08 and 29.09 seconds to execute in python3 -- several updates are pending will retry
 
 ================================================================================
  multipole names 			(without excluded multipoles) 
@@ -129,12 +126,6 @@ H3moments = O1momentsTrans.transform(H3moments)			# To transform
 geometryTrans = preprocessing.StandardScaler().fit(geometry) 	# To fit standardisation transform
 geometry = geometryTrans.transform(geometry)			    # To transform
 
-
-#===============================================================================
-#     TODO: 
-#-> fine grained paramerisation of the C, gamma and epsilon terms in a series of range based for loops looking at the error for a given parameter.
-#===============================================================================
-
 def monopoleModel(atom, newOrOld):
 #   Purpose: Calculates the monopole value
 #   Usage: Accepts atom type and if new or old model
@@ -188,6 +179,7 @@ q00_result.insert(0,O1_q00_predicted)
 # scale the data back using the inverse_transform
 # outputTemplate matches the shape of the input moments matrix
 # the moment of interest is put in the correct column in this zero'd matrix.
+#----------------------------------------------------------------------
 H2outputTemplateNew = np.zeros((numTest, H2moments.shape[1]))
 H2outputTemplateOld = np.zeros((numTest, H2moments.shape[1]))
 H2outputTemplateNew[:,0] = q00_result[1]
