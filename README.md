@@ -1,8 +1,11 @@
-# PyML -- Python support vector machine experiment to predict atom's MM in a heirachical manner
+# PyML
+## A Python support vector machine experiment to predict atomic multipole moments in a hierarchical manner
 -------
-
-##### Alpha state
 ###### Requires sklearn, matplotlib, numpy and optionally seaborn for better graphics.
+## Setup 
+### Using Conda
+* Download Python 3.X conda variant from: http://conda.pydata.org/miniconda.html
+* Once installed and in a new terminal run: **conda install scikit-learn matplotlib numpy seaborn scipy=0.17.1**
 
 ## News:
 * Centred and scaled data, drastically improving accuracy from prototype by 100x.
